@@ -5,13 +5,15 @@ import org.activiti.bpmn.model.Process;
 import org.activiti.engine.RepositoryService;
 import org.activiti.engine.repository.DeploymentBuilder;
 import org.activiti.engine.runtime.Execution;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
 import java.util.UUID;
 
 @Component
-public class CreateAndDeployFlow {
+public class CreateFlow1 implements InitializingBean {
+    private String flowKey = "flow1";
 
     public void createAndDeploy(String keyName) {
         StartEvent start = new StartEvent();
@@ -25,8 +27,9 @@ public class CreateAndDeployFlow {
         ServiceTask job = new ServiceTask();
         job.setId(getUniqueKey());
         job.setName("job");
+        job.setAsynchronous(true);
         job.setImplementationType(ImplementationType.IMPLEMENTATION_TYPE_EXPRESSION);
-        job.setImplementation("#{createAndDeployFlow.execute(execution)}");
+        job.setImplementation("#{createFlow1.execute(execution)}");
 
         SequenceFlow startToJob = new SequenceFlow();
         startToJob.setSourceRef(start.getId());
@@ -61,9 +64,16 @@ public class CreateAndDeployFlow {
     }
 
     public void execute(Execution execution) {
-        System.out.println("hello: " + execution.getActivityId());
+        System.out.println(Thread.currentThread().getName() + "hello: " + execution.getActivityId());
     }
 
     @Resource
     private RepositoryService repositoryService;
+
+    @Override
+    public void afterPropertiesSet() throws Exception {
+        if (repositoryService.createProcessDefinitionQuery().processDefinitionKey(flowKey).list().isEmpty()) {
+            createAndDeploy(flowKey);
+        }
+    }
 }
