@@ -21,7 +21,7 @@ public class Activiti {
         runtimeService = context.getBean("runtimeService", RuntimeService.class);
         taskService = context.getBean("taskService", TaskService.class);
 
-        ProcessInstance instance = runtimeService.startProcessInstanceByKey("flow2");
+        ProcessInstance instance = runtimeService.startProcessInstanceByKey("flow3");
 
 
         System.out.println(Thread.currentThread().getName() + " started:" + instance.getId());
