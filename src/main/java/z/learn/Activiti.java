@@ -32,11 +32,11 @@ public class Activiti {
             System.out.println(Thread.currentThread().getName() + " Complete task id: " + t.getId());
         });
 
-        Thread.sleep(2 * 1000);
+        Thread.sleep(10 * 1000);
 
         runtimeService.suspendProcessInstanceById(instance.getProcessInstanceId());
         System.out.println(Thread.currentThread().getName() + " suspended:" + instance.getId());
-        Thread.sleep(2 * 1000);
+        Thread.sleep(30 * 1000);
 
         runtimeService.activateProcessInstanceById(instance.getProcessInstanceId());
         System.out.println(Thread.currentThread().getName() + " activated:" + instance.getId());
