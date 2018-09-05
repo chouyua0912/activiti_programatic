@@ -6,14 +6,14 @@
 
     <context:component-scan base-package="z.learn"/>
 
-    <bean id="processEngine" class="org.activiti.spring.ProcessEngineFactoryBean">
+    <bean id="processEngine" class="org.activiti.spring.ProcessEngineFactoryBean">      <!-- ProcessEngine 有启动关闭的钩子 -->
         <property name="processEngineConfiguration" ref="processEngineConfiguration"/>
     </bean>
     <bean id="processEngineConfiguration" class="org.activiti.spring.SpringProcessEngineConfiguration">
         <property name="dataSource" ref="dataSource"/>
         <property name="transactionManager" ref="transactionManager"/>
         <property name="databaseSchemaUpdate" value="true"/>
-        <property name="jobExecutorActivate" value="false"/>
+        <property name="jobExecutorActivate" value="false"/>        <!-- JobExecutor是同步执行器，与AsyncExecutor不同时存在 -->
         <property name="asyncExecutorEnabled" value="true" />
         <property name="asyncExecutorActivate" value="true" />
     </bean>
