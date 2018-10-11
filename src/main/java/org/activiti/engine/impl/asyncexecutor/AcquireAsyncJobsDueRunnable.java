@@ -52,7 +52,7 @@ public class AcquireAsyncJobsDueRunnable implements Runnable {
 
                 boolean allJobsSuccessfullyOffered = true;
                 for (JobEntity job : acquiredJobs.getJobs()) {
-                    boolean jobSuccessFullyOffered = asyncExecutor.executeAsyncJob(job);
+                    boolean jobSuccessFullyOffered = asyncExecutor.executeAsyncJob(job);        // 异步执行器
                     if (!jobSuccessFullyOffered) {
                         allJobsSuccessfullyOffered = false;
                     }
@@ -85,7 +85,7 @@ public class AcquireAsyncJobsDueRunnable implements Runnable {
                 millisToWait = asyncExecutor.getDefaultAsyncJobAcquireWaitTimeInMillis();
             }
 
-            if (millisToWait > 0) {
+            if (millisToWait > 0) {                     // 进行休眠
                 try {
                     if (log.isDebugEnabled()) {
                         log.debug("async job acquisition thread sleeping for {} millis", millisToWait);

@@ -45,8 +45,8 @@ public class ExecuteAsyncRunnable implements Runnable {
     }
 
     public void run() {
-        boolean lockNotNeededOrSuccess = lockJobIfNeeded();
-        if (lockNotNeededOrSuccess) {
+        boolean lockNotNeededOrSuccess = lockJobIfNeeded();     // 锁定任务 或者任务本身不需要锁定
+        if (lockNotNeededOrSuccess) {                           // 锁定成功，结束之后 Lock_exp_time是清空状态，但是due_date是新的
             executeJob();
             unlockJobIfNeeded();
         }
@@ -58,7 +58,7 @@ public class ExecuteAsyncRunnable implements Runnable {
      */
     protected boolean lockJobIfNeeded() {
         try {
-            if (job.isExclusive()) {
+            if (job.isExclusive()) {        // 默认是true
                 commandExecutor.execute(new LockExclusiveJobCmd(job));
             }
 

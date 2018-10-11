@@ -57,7 +57,7 @@ public class AtomicOperationActivityExecute implements AtomicOperation {
                                 activity.getActivityBehavior().getClass().getCanonicalName()));
             }
 
-            activityBehavior.execute(execution);
+            activityBehavior.execute(execution);        // Activiti节点（开始、结束、任务、网关等等）都是Activity类型的，只是其挂的ActivityBehavior不同，通过不同的ActivityBehavior来实现相应的操作。
         } catch (RuntimeException e) {
             throw e;
         } catch (Exception e) {

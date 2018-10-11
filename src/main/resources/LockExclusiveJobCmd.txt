@@ -1,0 +1,26 @@
+execute:54, LockExclusiveJobCmd (org.activiti.engine.impl.cmd)
+execute:24, CommandInvoker (org.activiti.engine.impl.interceptor)
+execute:56, CommandContextInterceptor (org.activiti.engine.impl.interceptor)
+doInTransaction:47, SpringTransactionInterceptor$1 (org.activiti.spring)
+execute:133, TransactionTemplate (org.springframework.transaction.support)
+execute:45, SpringTransactionInterceptor (org.activiti.spring)
+execute:31, LogInterceptor (org.activiti.engine.impl.interceptor)
+execute:41, CommandExecutorImpl (org.activiti.engine.impl.cfg)
+execute:36, CommandExecutorImpl (org.activiti.engine.impl.cfg)
+lockJobIfNeeded:62, ExecuteAsyncRunnable (org.activiti.engine.impl.asyncexecutor)
+run:48, ExecuteAsyncRunnable (org.activiti.engine.impl.asyncexecutor)
+runWorker:1149, ThreadPoolExecutor (java.util.concurrent)
+run:624, ThreadPoolExecutor$Worker (java.util.concurrent)
+run:748, Thread (java.lang)
+
+DbSqlSessionFactory.java
+
+Execution.xml
+
+  <update id="updateProcessInstanceLockTime" parameterType="java.util.Map">
+    update ${prefix}ACT_RU_EXECUTION
+    set
+      LOCK_TIME_ = #{lockTime, jdbcType=TIMESTAMP}
+    where ID_ = #{id}
+      and (LOCK_TIME_ is null OR LOCK_TIME_ &lt; #{expirationTime, jdbcType=TIMESTAMP})
+  </update>

@@ -114,7 +114,7 @@ public class CommandContext {
 
                     try {
                         if (exception == null) {
-                            transactionContext.commit();
+                            transactionContext.commit();            // 关闭提交事务
                         }
                     } catch (Throwable exception) {
                         exception(exception);

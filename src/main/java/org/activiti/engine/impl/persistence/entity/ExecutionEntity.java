@@ -53,7 +53,7 @@ import java.util.*;
 
 
 /**
- * @author Tom Baeyens
+ * @author Tom Baeyens          实现了AtomicOperation里面定义的接口 InterpretableExecution
  * @author Daniel Meyer
  * @author Falko Menge
  * @author Saeid Mirzaei
@@ -653,7 +653,7 @@ public class ExecutionEntity extends VariableScopeImpl implements ActivityExecut
         return true;
     }
 
-    public void performOperation(AtomicOperation executionOperation) {
+    public void performOperation(AtomicOperation executionOperation) {          // 实现的 InterpretableExecution 的方法
         if (executionOperation.isAsync(this)) {
             scheduleAtomicOperationAsync(executionOperation);
         } else {

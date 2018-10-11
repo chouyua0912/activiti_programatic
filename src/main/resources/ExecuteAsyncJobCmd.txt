@@ -1,0 +1,18 @@
+execute:34, MessageEntity (org.activiti.engine.impl.persistence.entity)
+execute:52, ExecuteAsyncJobCmd (org.activiti.engine.impl.cmd)
+execute:24, CommandInvoker (org.activiti.engine.impl.interceptor)
+execute:56, CommandContextInterceptor (org.activiti.engine.impl.interceptor)
+doInTransaction:47, SpringTransactionInterceptor$1 (org.activiti.spring)
+execute:133, TransactionTemplate (org.springframework.transaction.support)
+execute:45, SpringTransactionInterceptor (org.activiti.spring)
+execute:31, LogInterceptor (org.activiti.engine.impl.interceptor)
+execute:41, CommandExecutorImpl (org.activiti.engine.impl.cfg)
+execute:36, CommandExecutorImpl (org.activiti.engine.impl.cfg)
+executeJob:95, ExecuteAsyncRunnable (org.activiti.engine.impl.asyncexecutor)
+run:50, ExecuteAsyncRunnable (org.activiti.engine.impl.asyncexecutor)
+runWorker:1149, ThreadPoolExecutor (java.util.concurrent)
+run:624, ThreadPoolExecutor$Worker (java.util.concurrent)
+run:748, Thread (java.lang)
+
+
+最后是执行MessageEntity，执行完完会删除

@@ -67,8 +67,8 @@ public abstract class AbstractAsyncJobExecutor implements AsyncExecutor {
 
     public boolean executeAsyncJob(JobEntity job) {
         if (isActive) {
-            Runnable runnable = createRunnableForJob(job);      // 封装Runnable
-            boolean result = executeAsyncJob(runnable);         // 使用线程池执行
+            Runnable runnable = createRunnableForJob(job);      // 封装Runnable  ExecuteAsyncRunnable
+            boolean result = executeAsyncJob(runnable);         // 使用线程池执行  触发点是 ExecuteAsyncRunnable
             if (!result) {
                 doUnlockJob(job);
             }
