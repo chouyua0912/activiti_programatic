@@ -79,7 +79,7 @@ public class CreateFlow3 implements InitializingBean {
     }
 
     public void execute(Execution execution, String msg) {
-        for (int i = 0; i < 30; i++) {
+        for (int i = 0; i < 60; i++) {
             System.out.println(Thread.currentThread().getName() + ": Check: " + msg + " " + i + " : " + execution.getActivityId());
             try {
                 Thread.sleep(1000);
