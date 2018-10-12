@@ -21,7 +21,7 @@ public class ActivitiShutdown {
         taskService = context.getBean("taskService", TaskService.class);
         ProcessEngine processEngine = context.getBean(ProcessEngine.class);
 
-        ProcessInstance instance = runtimeService.startProcessInstanceByKey("flow3");       // 执行ｊｏｂ１的过程中会记录流程的ｒｅｖ，最后执行万去更新的时候如果版本不一致就会抛出并发更新异常
+        ProcessInstance instance = runtimeService.startProcessInstanceByKey("flow555");       // 执行ｊｏｂ１的过程中会记录流程的ｒｅｖ，最后执行万去更新的时候如果版本不一致就会抛出并发更新异常
 
         System.out.println(Thread.currentThread().getName() + " started: FlowInstanceId = " + instance.getId() + " " + new Date());
         Thread.sleep(30 * 1000);
