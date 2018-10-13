@@ -37,7 +37,7 @@ public class AtomicOperationActivityExecute implements AtomicOperation {
     public void execute(InterpretableExecution execution) {
         ActivityImpl activity = (ActivityImpl) execution.getActivity();
 
-        ActivityBehavior activityBehavior = activity.getActivityBehavior();
+        ActivityBehavior activityBehavior = activity.getActivityBehavior(); // 外挂的实际操作 比如：ServiceTaskExpressionActivityBehavior 来启动Job
         if (activityBehavior == null) {
             throw new PvmException("no behavior specified in " + activity);
         }
@@ -56,8 +56,8 @@ public class AtomicOperationActivityExecute implements AtomicOperation {
                                 (String) activity.getProperties().get("type"),
                                 activity.getActivityBehavior().getClass().getCanonicalName()));
             }
-
-            activityBehavior.execute(execution);        // Activiti节点（开始、结束、任务、网关等等）都是Activity类型的，只是其挂的ActivityBehavior不同，通过不同的ActivityBehavior来实现相应的操作。
+            // Activiti节点（开始、结束、任务、网关等等）都是Activity类型的，只是其挂的ActivityBehavior不同，通过不同的ActivityBehavior来实现相应的操作。
+            activityBehavior.execute(execution);    // InterpretableExecution继承了ActivityExecution，实现类是ExecutionEntity， 通过behavior.execute操作来串联
         } catch (RuntimeException e) {
             throw e;
         } catch (Exception e) {

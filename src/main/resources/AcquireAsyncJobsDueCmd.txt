@@ -1,3 +1,18 @@
+execute:39, AcquireAsyncJobsDueCmd (org.activiti.engine.impl.cmd)
+execute:30, AcquireAsyncJobsDueCmd (org.activiti.engine.impl.cmd)
+execute:24, CommandInvoker (org.activiti.engine.impl.interceptor)
+execute:56, CommandContextInterceptor (org.activiti.engine.impl.interceptor)
+doInTransaction:47, SpringTransactionInterceptor$1 (org.activiti.spring)
+execute:133, TransactionTemplate (org.springframework.transaction.support)
+execute:45, SpringTransactionInterceptor (org.activiti.spring)
+execute:31, LogInterceptor (org.activiti.engine.impl.interceptor)
+execute:41, CommandExecutorImpl (org.activiti.engine.impl.cfg)
+execute:36, CommandExecutorImpl (org.activiti.engine.impl.cfg)
+run:51, AcquireAsyncJobsDueRunnable (org.activiti.engine.impl.asyncexecutor)
+run:748, Thread (java.lang)
+
+selectAsyncJobsDueToExecute
+
   <select id="selectAsyncJobsDueToExecute" parameterType="org.activiti.engine.impl.db.ListQueryParameterObject" resultMap="jobResultMap">
     ${limitBefore}
     select
@@ -40,3 +55,22 @@
       )
     ${limitAfter}
   </select>
+
+
+com.mysql.cj.jdbc.PreparedStatement@73cc370c:
+select RES.*
+from ACT_RU_JOB RES
+LEFT OUTER JOIN ACT_RU_EXECUTION PI ON PI.ID_ = RES.PROCESS_INSTANCE_ID_
+where RES.RETRIES_ > 0        -- 还允许retry的job
+and (                         -- 并且
+    (RES.DUEDATE_ is not null and RES.DUEDATE_ <= '2018-10-13 03:51:57.785' and RES.LOCK_EXP_TIME_ is null)   -- 没有锁，有due date，due date已经超时了
+    or
+    (RES.LOCK_EXP_TIME_ is not null and RES.LOCK_EXP_TIME_ <= '2018-10-13 03:51:57.785')        -- 有所，但是锁已经超时了
+)
+and TYPE_ = 'message'         -- 只抓取message类型job任务
+and (                         -- 并且
+    (RES.EXECUTION_ID_ is null)   -- 没有execution的数据
+    or
+    (PI.SUSPENSION_STATE_ = 1)    -- 状态    表示流程定义的状态是激活还是中止，激活为1，中止为2，中止后，流程无法启动。
+)
+LIMIT 1 OFFSET 0

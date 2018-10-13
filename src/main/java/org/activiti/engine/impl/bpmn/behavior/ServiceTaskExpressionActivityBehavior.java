@@ -64,7 +64,7 @@ public class ServiceTaskExpressionActivityBehavior extends TaskActivityBehavior 
                     }
                 }
 
-                value = expression.getValue(execution);
+                value = expression.getValue(execution);     // 执行绑定的代码      JuelExpression
                 if (resultVariable != null) {
                     execution.setVariable(resultVariable, value);
                 }

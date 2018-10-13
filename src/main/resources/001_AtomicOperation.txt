@@ -1,0 +1,24 @@
+public interface AtomicOperation {
+
+   PROCESS_START = new AtomicOperationProcessStart();
+   PROCESS_START_INITIAL = new AtomicOperationProcessStartInitial();
+   PROCESS_END = new AtomicOperationProcessEnd();
+   ACTIVITY_START = new AtomicOperationActivityStart();             同步，继承于AbstractEventAtomicOperation
+   ACTIVITY_EXECUTE = new AtomicOperationActivityExecute();         同步操作                外挂了实际的ActivityBehavior操作。。比如 ServiceTaskExpressionActivityBehavior
+   ACTIVITY_END = new AtomicOperationActivityEnd();                 同步，继承于AbstractEventAtomicOperation
+
+
+   TRANSITION_NOTIFY_LISTENER_END = new AtomicOperationTransitionNotifyListenerEnd();
+   TRANSITION_DESTROY_SCOPE = new AtomicOperationTransitionDestroyScope();
+   TRANSITION_NOTIFY_LISTENER_TAKE = new AtomicOperationTransitionNotifyListenerTake();         同步操作
+   TRANSITION_CREATE_SCOPE = new AtomicOperationTransitionCreateScope();
+   TRANSITION_NOTIFY_LISTENER_START = new AtomicOperationTransitionNotifyListenerStart();
+
+
+   DELETE_CASCADE = new AtomicOperationDeleteCascade();
+   DELETE_CASCADE_FIRE_ACTIVITY_END = new AtomicOperationDeleteCascadeFireActivityEnd();
+
+  void execute(InterpretableExecution execution);
+
+  boolean isAsync(InterpretableExecution execution);
+}
