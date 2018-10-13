@@ -77,12 +77,12 @@ public abstract class JobEntity implements Job, PersistentObject, HasRevision, B
     public void execute(CommandContext commandContext) {
         ExecutionEntity execution = null;
         if (executionId != null) {
-            execution = commandContext.getExecutionEntityManager().findExecutionById(executionId);
+            execution = commandContext.getExecutionEntityManager().findExecutionById(executionId);      // 查找对应的 execution
         }
 
         Map<String, JobHandler> jobHandlers = Context.getProcessEngineConfiguration().getJobHandlers();
         JobHandler jobHandler = jobHandlers.get(jobHandlerType);
-        jobHandler.execute(this, jobHandlerConfiguration, execution, commandContext);   // 通过JobHandler代理执行自己
+        jobHandler.execute(this, jobHandlerConfiguration, execution, commandContext);   // 通过JobHandler代理执行自己  查找了与自己关联的ExecutionEntity
     }
 
     public void insert() {

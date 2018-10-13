@@ -69,8 +69,8 @@ public abstract class AbstractAsyncJobExecutor implements AsyncExecutor {
         if (isActive) {
             Runnable runnable = createRunnableForJob(job);      // 封装Runnable  ExecuteAsyncRunnable
             boolean result = executeAsyncJob(runnable);         // 使用线程池执行  触发点是 ExecuteAsyncRunnable
-            if (!result) {
-                doUnlockJob(job);
+            if (!result) {      /** 没有提交成功时候，没有执行成功时候需要 unlock **/
+                doUnlockJob(job);           // 根据执行情况，可能要更新数据库
             }
             return result; // false indicates that the job was rejected.
         } else {
@@ -81,17 +81,17 @@ public abstract class AbstractAsyncJobExecutor implements AsyncExecutor {
 
     protected abstract boolean executeAsyncJob(Runnable runnable);
 
-    protected void doUnlockJob(final JobEntity job) {
+    protected void doUnlockJob(final JobEntity job) {   /** 只有提交失败才会执行 **/
         // The job will now be 'unlocked', meaning that the lock owner/time is set to null,
         // so other executors can pick the job up (or this async executor, the next time the
         // acquire query is executed.
 
         // This can happen while already in a command context (for example in a transaction listener
-        // after the async executor has been hinted that a new async job is created)
-        // or not (when executed in the aquire thread runnable)
+        // after the async executor has been hinted that a new async job is created)  事务监听器hint状态下会有context
+        // or not (when executed in the aquire thread runnable)   acquire线程里面执行不会有context
         CommandContext commandContext = Context.getCommandContext();
         if (commandContext != null) {
-            unlockJob(job, commandContext);
+            unlockJob(job, commandContext);     // 更新 ACT_RU_JOB 表，设置due date,lock_owner,lock_expire_time 为null
         } else {
             commandExecutor.execute(new Command<Void>() {
                 public Void execute(CommandContext commandContext) {

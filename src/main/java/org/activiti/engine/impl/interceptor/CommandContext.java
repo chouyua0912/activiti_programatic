@@ -55,22 +55,22 @@ public class CommandContext {
 
     public void performOperation(AtomicOperation executionOperation, InterpretableExecution execution) {
         nextOperations.add(executionOperation);
-        if (nextOperations.size() == 1) {
+        if (nextOperations.size() == 1) {                   // 只有一个操作的时候才会执行
             try {
-                Context.setExecutionContext(execution);
+                Context.setExecutionContext(execution);     // 压栈 执行上下文 妈的！
                 while (!nextOperations.isEmpty()) {
-                    AtomicOperation currentOperation = nextOperations.removeFirst();
-                    if (log.isTraceEnabled()) {
-                        log.trace("AtomicOperation: {} on {}", currentOperation, this);
+                    AtomicOperation currentOperation = nextOperations.removeFirst();    // 会删除首个Operation
+                    if (log.isTraceEnabled()) {                                         /** 这样在AtomicOperation里面调用AtomicOperation时候就可以递归了**/
+                        log.trace("AtomicOperation: {} on {}", currentOperation, this); /** 递归执行的命令会复用Context **/
                     }
-                    if (execution.getReplacedBy() == null) {
-                        currentOperation.execute(execution);
+                    if (execution.getReplacedBy() == null) {    // AsyncContinuationJobHandler->TRANSITION_CREATE_SCOPE 首先是Create scope
+                        currentOperation.execute(execution); // 执行AtomicOperation 可能会递归调用 其他的AtomicOperation
                     } else {
                         currentOperation.execute(execution.getReplacedBy());
                     }
                 }
             } finally {
-                Context.removeExecutionContext();
+                Context.removeExecutionContext();           // 出栈 执行上下文
             }
         }
     }

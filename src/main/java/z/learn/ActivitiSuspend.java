@@ -36,7 +36,7 @@ import org.springframework.context.support.ClassPathXmlApplicationContext;
  *                                  ->TRANSITION_CREATE_SCOPE
  *                                  ->ACTIVITY_EXECUTE
  */
-public class Activiti {
+public class ActivitiSuspend {
 
     private static ApplicationContext context;
     private static RuntimeService runtimeService;

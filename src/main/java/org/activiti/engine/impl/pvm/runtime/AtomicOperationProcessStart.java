@@ -26,7 +26,7 @@ import java.util.Map;
 
 /**
  * 同步 AtomicOperationProcessStart -> PROCESS_START_INITIAL
- *
+ *  会设置 Activity
  * @author Tom Baeyens
  * @author Daniel Meyer
  */
@@ -62,7 +62,7 @@ public class AtomicOperationProcessStart extends AbstractEventAtomicOperation {
         ProcessDefinitionImpl processDefinition = execution.getProcessDefinition();
         StartingExecution startingExecution = execution.getStartingExecution();
         List<ActivityImpl> initialActivityStack = processDefinition.getInitialActivityStack(startingExecution.getInitial());
-        execution.setActivity(initialActivityStack.get(0));
+        execution.setActivity(initialActivityStack.get(0));         // 设置首个对应的动作 Activity
         execution.performOperation(PROCESS_START_INITIAL);
     }
 }

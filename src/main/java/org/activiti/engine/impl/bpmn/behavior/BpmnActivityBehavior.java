@@ -98,7 +98,7 @@ public class BpmnActivityBehavior implements Serializable {
     }
 
     /**
-     * Actual implementation of leaving an activity.        离开当前activity，进入下个操作
+     * Actual implementation of leaving an activity.        离开当前activity，进入下个操作,初始化Activity
      *
      * @param execution                      The current execution context
      * @param checkConditions                Whether or not to check conditions before determining whether or
@@ -132,7 +132,7 @@ public class BpmnActivityBehavior implements Serializable {
                 transitionsToTake.add(outgoingTransition);
             }
         }
-
+        /** 查找并初始化所有要走的路 **/
         if (transitionsToTake.size() == 1) {
 
             execution.take(transitionsToTake.get(0));

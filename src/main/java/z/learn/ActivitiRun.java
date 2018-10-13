@@ -16,6 +16,9 @@ public class ActivitiRun {
         runtimeService = context.getBean("runtimeService", RuntimeService.class);
         taskService = context.getBean("taskService", TaskService.class);
 
+        // ProcessInstance instance = runtimeService.startProcessInstanceByKey("flow3");
+        // ProcessInstance instance = runtimeService.startProcessInstanceByKey("flow555");
+
         Thread.sleep(10 * 60 * 1000);
     }
 }

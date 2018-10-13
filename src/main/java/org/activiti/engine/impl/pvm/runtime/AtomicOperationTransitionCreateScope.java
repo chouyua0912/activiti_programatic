@@ -17,7 +17,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
-/**
+/**唯一有可能异步的
  * @author Tom Baeyens
  */
 public class AtomicOperationTransitionCreateScope implements AtomicOperation {
@@ -25,12 +25,12 @@ public class AtomicOperationTransitionCreateScope implements AtomicOperation {
     private static Logger log = LoggerFactory.getLogger(AtomicOperationTransitionCreateScope.class);
 
     public boolean isAsync(InterpretableExecution execution) {
-        ActivityImpl activity = (ActivityImpl) execution.getActivity();
+        ActivityImpl activity = (ActivityImpl) execution.getActivity();     // execution在JobEntity.execute时候查找绑定的
         return activity.isAsync();
     }
 
-    public void execute(InterpretableExecution execution) {
-        InterpretableExecution propagatingExecution = null;
+    public void execute(InterpretableExecution execution) {     // ExecutionEntity = InterpretableExecution
+        InterpretableExecution propagatingExecution = null;     // execution在JobEntity.execute时候查找绑定的
         ActivityImpl activity = (ActivityImpl) execution.getActivity();
         if (activity.isScope()) {
             propagatingExecution = (InterpretableExecution) execution.createExecution();

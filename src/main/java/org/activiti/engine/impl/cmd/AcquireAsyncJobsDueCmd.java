@@ -24,7 +24,7 @@ import java.util.GregorianCalendar;
 import java.util.List;
 
 
-/**
+/** 只从数据库获取JobEntity，lock操作值修改内存中对象的数据，并不写到数据库
  * @author Tijs Rademakers
  */
 public class AcquireAsyncJobsDueCmd implements Command<AcquiredJobEntities> {
@@ -49,7 +49,7 @@ public class AcquireAsyncJobsDueCmd implements Command<AcquiredJobEntities> {
         return acquiredJobs;
     }
 
-    protected void lockJob(CommandContext commandContext, JobEntity job, int lockTimeInMillis) {
+    protected void lockJob(CommandContext commandContext, JobEntity job, int lockTimeInMillis) {        // 并没有更新数据库
         GregorianCalendar gregorianCalendar = new GregorianCalendar();
         gregorianCalendar.setTime(commandContext.getProcessEngineConfiguration().getClock().getCurrentTime());
         gregorianCalendar.add(Calendar.MILLISECOND, lockTimeInMillis);

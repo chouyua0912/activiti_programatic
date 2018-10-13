@@ -29,7 +29,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * @author Joram Barrez
+ * @author Joram Barrez         被提交到单独的线程池中执行
  * @author Tijs Rademakers
  */
 public class ExecuteAsyncRunnable implements Runnable {

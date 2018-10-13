@@ -472,7 +472,7 @@ public class ExecutionEntity extends VariableScopeImpl implements ActivityExecut
         if (transition == null) {
             throw new PvmException("transition is null");
         }
-        setActivity((ActivityImpl) transition.getSource());
+        setActivity((ActivityImpl) transition.getSource());         // 设置去向Activity
         setTransition((TransitionImpl) transition);
         performOperation(AtomicOperation.TRANSITION_NOTIFY_LISTENER_END);
     }
@@ -654,8 +654,8 @@ public class ExecutionEntity extends VariableScopeImpl implements ActivityExecut
     }
 
     public void performOperation(AtomicOperation executionOperation) {          // 实现的 InterpretableExecution 的方法
-        if (executionOperation.isAsync(this)) {
-            scheduleAtomicOperationAsync(executionOperation);
+        if (executionOperation.isAsync(this)) {         // 有些 AtomicOperation 同步还是异步执行是通过Execution数据来决定的
+            scheduleAtomicOperationAsync(executionOperation);    // 发送MessageEntity
         } else {
             performOperationSync(executionOperation);
         }
@@ -679,7 +679,7 @@ public class ExecutionEntity extends VariableScopeImpl implements ActivityExecut
         ProcessEngineConfiguration processEngineConfig = Context.getCommandContext().getProcessEngineConfiguration();
         expireCal.setTime(processEngineConfig.getClock().getCurrentTime());
         expireCal.add(Calendar.SECOND, processEngineConfig.getLockTimeAsyncJobWaitTime());
-        message.setLockExpirationTime(expireCal.getTime());
+        message.setLockExpirationTime(expireCal.getTime());         // 会设置LockTime
 
         // Inherit tenant id (if applicable)
         if (getTenantId() != null) {
@@ -689,7 +689,7 @@ public class ExecutionEntity extends VariableScopeImpl implements ActivityExecut
         Context
                 .getCommandContext()
                 .getJobEntityManager()
-                .send(message);
+                .send(message);             // 发送消息通知决定
     }
 
     public boolean isActive(String activityId) {

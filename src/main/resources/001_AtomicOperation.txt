@@ -1,18 +1,21 @@
 public interface AtomicOperation {
 
-   PROCESS_START = new AtomicOperationProcessStart();
-   PROCESS_START_INITIAL = new AtomicOperationProcessStartInitial();
-   PROCESS_END = new AtomicOperationProcessEnd();
-   ACTIVITY_START = new AtomicOperationActivityStart();             同步，继承于AbstractEventAtomicOperation
-   ACTIVITY_EXECUTE = new AtomicOperationActivityExecute();         同步操作                外挂了实际的ActivityBehavior操作。。比如 ServiceTaskExpressionActivityBehavior
-   ACTIVITY_END = new AtomicOperationActivityEnd();                 同步，继承于AbstractEventAtomicOperation
+   同步异步执行在 ExecutionEntity.performOperation(AtomicOperation executionOperation) 中会处理
+      异步执行会发送MessageEntity
+
+   PROCESS_START = new AtomicOperationProcessStart();                   同步
+   PROCESS_START_INITIAL = new AtomicOperationProcessStartInitial();    同步
+   PROCESS_END = new AtomicOperationProcessEnd();                       同步
+   ACTIVITY_START = new AtomicOperationActivityStart();                 同步
+   ACTIVITY_EXECUTE = new AtomicOperationActivityExecute();             同步 -> 外挂了实际的ActivityBehavior操作。。比如 ServiceTaskExpressionActivityBehavior
+   ACTIVITY_END = new AtomicOperationActivityEnd();                     同步
 
 
-   TRANSITION_NOTIFY_LISTENER_END = new AtomicOperationTransitionNotifyListenerEnd();
-   TRANSITION_DESTROY_SCOPE = new AtomicOperationTransitionDestroyScope();
-   TRANSITION_NOTIFY_LISTENER_TAKE = new AtomicOperationTransitionNotifyListenerTake();         同步操作
-   TRANSITION_CREATE_SCOPE = new AtomicOperationTransitionCreateScope();
-   TRANSITION_NOTIFY_LISTENER_START = new AtomicOperationTransitionNotifyListenerStart();
+   TRANSITION_NOTIFY_LISTENER_END = new AtomicOperationTransitionNotifyListenerEnd();       同步
+   TRANSITION_DESTROY_SCOPE = new AtomicOperationTransitionDestroyScope();                  同步
+   TRANSITION_NOTIFY_LISTENER_TAKE = new AtomicOperationTransitionNotifyListenerTake();     同步
+   TRANSITION_CREATE_SCOPE = new AtomicOperationTransitionCreateScope();                    由Activity决定
+   TRANSITION_NOTIFY_LISTENER_START = new AtomicOperationTransitionNotifyListenerStart();   同步
 
 
    DELETE_CASCADE = new AtomicOperationDeleteCascade();
@@ -22,3 +25,189 @@ public interface AtomicOperation {
 
   boolean isAsync(InterpretableExecution execution);
 }
+
+
+
+
+所有Cmd都是CommandExecutor来执行
+CommandExecutorImpl -> CommandExecutor 包含 CommandInterceptor
+    |-都实现了接口 execute(CommandConfig config, Command<T> command)
+    |-CommandConfig          defaultConfig  执行命令的默认配置
+    |-CommandInterceptor
+           LogInterceptor                   加入日志
+           SpringTransactionInterceptor     加入事务
+           CommandContextInterceptor        加入上下文Context
+           CommandInvoker                   代理命令执行 command.execute(Context.getCommandContext()
+
+
+AcquireAsyncJobsDueRunnable- >runnable      只获取Job，不锁
+  run()
+   while
+     |-执行命令 AcquireAsyncJobsDueCmd 抓取任务，交给asyncExecutor 提交执行
+                  |-AcquireAsyncJobsDueCmd 会查询job然后 lockJob             selectAsyncJobsDueToExecute                         SQL  ACT_RU_JOB表
+                           lockJob   没有实际操作数据库，只是在内存数据里更新                                                         实际只查询了任务，并没有更新到数据库
+     |=asyncExecutor 提交任务执行 asyncExecutor.executeAsyncJob(job);  JobEntity  AbstractAsyncJobExecutor
+
+AbstractAsyncJobExecutor <ExecutorService
+     |-把Job包装成 ExecuteAsyncRunnable
+     |-提交线程池executorService执行       子类的DefaultAsyncJobExecutor的线程池去执行
+     |       任务提交失败则 doUnlockJob                                                                                           SQL ACT_RU_JOB表 unacquireJob 执行失败情况下
+
+ExecuteAsyncRunnable ->runnable    独立的线程池里线程在执行，执行完成之前一直锁住Execution？
+  run()
+     |-lockJobIfNeeded()  如果job是exclusive，commandExecutor执行LockExclusiveJobCmd命令
+     |                                                             |-updateProcessInstanceLockTime                              SQL  更新Execution表
+     |-executeJob() 锁成功了执行Job，commandExecutor.execute(new ExecuteAsyncJobCmd(job)) 把代理的JobEntity包装成 ExecuteAsyncJobCmd 命令
+     |                                                                                                             |-代理了JobEntity，调用job.execute
+     |=unlockJobIfNeeded() executeJob完成之后一定会执行，如果是exclusive执行UnlockExclusiveJobCmd
+                                                                            |-clearProcessInstanceLockTime                      SQL  更新Execution表
+
+ExecuteAsyncJobCmd
+     |-job.execute(commandContext)   ->  JobEntity.execute(CommandContext)  代理执行
+     |-通知事件JOB_EXECUTION_SUCCESS
+
+JobEntity -> MessageEntity
+     |-执行父类的execute方法   代理到JobHandler 上执行
+     |            |-AsyncContinuationJobHandler.execute(JobEntity job, String configuration, ExecutionEntity execution, CommandContext commandContext)
+     |-delete() 删除job   把删除job加入到List，实际删除是在context.close里面
+
+AsyncContinuationJobHandler    与AtomicOperation串联起来
+     |=commandContext.performOperation(atomicOperation, execution);    TRANSITION_CREATE_SCOPE
+
+CommandContext
+     |-performOperation(AtomicOperation executionOperation, InterpretableExecution execution)       首先是TRANSITION_CREATE_SCOPE
+
+
+
+TRANSITION_CREATE_SCOPE
+TRANSITION_NOTIFY_LISTENER_START
+     |-TRANSITION_CREATE_SCOPE
+     |-ACTIVITY_EXECUTE
+ACTIVITY_EXECUTE
+ServiceTaskExpressionActivityBehavior
+leave
+
+
+BpmnActivityBehavior.performOutgoingBehavior 初始化Activity，进入到下一个步骤
+
+ExecutionEntity
+   processDefinition(ProcessDefinitionEntity) 流程定义
+       activities 所有的动作Activity
+           activity
+               incomingTransitions
+               outgoingTransitions
+               activityBehavior
+               isScope
+               isAsync
+   processInstance(ExecutionEntity) 流程实例，指向自己
+   activity(ActivityImpl) 当前动作
+
+
+  <update id="updateProcessInstanceLockTime" parameterType="java.util.Map">
+    update ${prefix}ACT_RU_EXECUTION
+    set
+      LOCK_TIME_ = #{lockTime, jdbcType=TIMESTAMP}
+    where ID_ = #{id}
+      and (LOCK_TIME_ is null OR LOCK_TIME_ &lt; #{expirationTime, jdbcType=TIMESTAMP})
+  </update>
+
+  <update id="clearProcessInstanceLockTime" parameterType="java.util.Map">
+    update ${prefix}ACT_RU_EXECUTION
+    set
+      LOCK_TIME_ = null
+    where ID_ = #{id}
+  </update>
+
+
+
+
+
+
+execute:39, AbstractEventAtomicOperation (org.activiti.engine.impl.pvm.runtime) [9]
+performOperation:67, CommandContext (org.activiti.engine.impl.interceptor)
+performOperationSync:667, ExecutionEntity (org.activiti.engine.impl.persistence.entity)
+performOperation:660, ExecutionEntity (org.activiti.engine.impl.persistence.entity)
+eventNotificationsCompleted:78, AtomicOperationActivityEnd (org.activiti.engine.impl.pvm.runtime)                       AtomicOperationActivityEnd                  同步
+execute:58, AbstractEventAtomicOperation (org.activiti.engine.impl.pvm.runtime) [8]
+performOperation:67, CommandContext (org.activiti.engine.impl.interceptor)
+performOperationSync:667, ExecutionEntity (org.activiti.engine.impl.persistence.entity)
+performOperation:660, ExecutionEntity (org.activiti.engine.impl.persistence.entity)
+execute:51, AbstractEventAtomicOperation (org.activiti.engine.impl.pvm.runtime) [7]
+performOperation:67, CommandContext (org.activiti.engine.impl.interceptor)
+performOperationSync:667, ExecutionEntity (org.activiti.engine.impl.persistence.entity)
+performOperation:660, ExecutionEntity (org.activiti.engine.impl.persistence.entity)
+end:423, ExecutionEntity (org.activiti.engine.impl.persistence.entity)
+execute:24, NoneEndEventActivityBehavior (org.activiti.engine.impl.bpmn.behavior)
+execute:61, AtomicOperationActivityExecute (org.activiti.engine.impl.pvm.runtime)                                       AtomicOperationActivityExecute              同步
+performOperation:67, CommandContext (org.activiti.engine.impl.interceptor)
+performOperationSync:667, ExecutionEntity (org.activiti.engine.impl.persistence.entity)
+performOperation:660, ExecutionEntity (org.activiti.engine.impl.persistence.entity)
+eventNotificationsCompleted:52, AtomicOperationTransitionNotifyListenerStart (org.activiti.engine.impl.pvm.runtime)     AtomicOperationTransitionNotifyListenerStart 同步
+execute:58, AbstractEventAtomicOperation (org.activiti.engine.impl.pvm.runtime) [6]
+performOperation:67, CommandContext (org.activiti.engine.impl.interceptor)
+performOperationSync:667, ExecutionEntity (org.activiti.engine.impl.persistence.entity)
+performOperation:660, ExecutionEntity (org.activiti.engine.impl.persistence.entity)
+execute:51, AbstractEventAtomicOperation (org.activiti.engine.impl.pvm.runtime) [5]
+performOperation:67, CommandContext (org.activiti.engine.impl.interceptor)
+performOperationSync:667, ExecutionEntity (org.activiti.engine.impl.persistence.entity)
+performOperation:660, ExecutionEntity (org.activiti.engine.impl.persistence.entity)
+execute:49, AtomicOperationTransitionCreateScope (org.activiti.engine.impl.pvm.runtime)                                 AtomicOperationTransitionCreateScope 同步异步皆可能
+performOperation:67, CommandContext (org.activiti.engine.impl.interceptor)
+performOperationSync:667, ExecutionEntity (org.activiti.engine.impl.persistence.entity)
+performOperation:660, ExecutionEntity (org.activiti.engine.impl.persistence.entity)
+execute:82, AtomicOperationTransitionNotifyListenerTake (org.activiti.engine.impl.pvm.runtime)                          AtomicOperationTransitionNotifyListenerTake 同步
+performOperation:67, CommandContext (org.activiti.engine.impl.interceptor)
+performOperationSync:667, ExecutionEntity (org.activiti.engine.impl.persistence.entity)
+performOperation:660, ExecutionEntity (org.activiti.engine.impl.persistence.entity)
+execute:116, AtomicOperationTransitionDestroyScope (org.activiti.engine.impl.pvm.runtime)                               AtomicOperationTransitionDestroyScope      同步
+performOperation:67, CommandContext (org.activiti.engine.impl.interceptor)
+performOperationSync:667, ExecutionEntity (org.activiti.engine.impl.persistence.entity)
+performOperation:660, ExecutionEntity (org.activiti.engine.impl.persistence.entity)
+eventNotificationsCompleted:35, AtomicOperationTransitionNotifyListenerEnd (org.activiti.engine.impl.pvm.runtime)       AtomicOperationTransitionNotifyListenerEnd  同步
+execute:58, AbstractEventAtomicOperation (org.activiti.engine.impl.pvm.runtime) [4]
+performOperation:67, CommandContext (org.activiti.engine.impl.interceptor)
+performOperationSync:667, ExecutionEntity (org.activiti.engine.impl.persistence.entity)
+performOperation:660, ExecutionEntity (org.activiti.engine.impl.persistence.entity)
+execute:51, AbstractEventAtomicOperation (org.activiti.engine.impl.pvm.runtime) [3]
+performOperation:67, CommandContext (org.activiti.engine.impl.interceptor)
+performOperationSync:667, ExecutionEntity (org.activiti.engine.impl.persistence.entity)
+performOperation:660, ExecutionEntity (org.activiti.engine.impl.persistence.entity)
+take:477, ExecutionEntity (org.activiti.engine.impl.persistence.entity)
+take:455, ExecutionEntity (org.activiti.engine.impl.persistence.entity)
+performOutgoingBehavior:138, BpmnActivityBehavior (org.activiti.engine.impl.bpmn.behavior)
+performDefaultOutgoingBehavior:66, BpmnActivityBehavior (org.activiti.engine.impl.bpmn.behavior)
+leave:44, FlowNodeActivityBehavior (org.activiti.engine.impl.bpmn.behavior)
+leave:47, AbstractBpmnActivityBehavior (org.activiti.engine.impl.bpmn.behavior)
+execute:73, ServiceTaskExpressionActivityBehavior (org.activiti.engine.impl.bpmn.behavior)                              ServiceTaskExpressionActivityBehavior
+execute:61, AtomicOperationActivityExecute (org.activiti.engine.impl.pvm.runtime)                                       AtomicOperationActivityExecute              同步
+performOperation:67, CommandContext (org.activiti.engine.impl.interceptor)
+performOperationSync:667, ExecutionEntity (org.activiti.engine.impl.persistence.entity)
+performOperation:660, ExecutionEntity (org.activiti.engine.impl.persistence.entity)
+eventNotificationsCompleted:52, AtomicOperationTransitionNotifyListenerStart (org.activiti.engine.impl.pvm.runtime)     AtomicOperationTransitionNotifyListenerStart 同步
+execute:58, AbstractEventAtomicOperation (org.activiti.engine.impl.pvm.runtime) [2]
+performOperation:67, CommandContext (org.activiti.engine.impl.interceptor)
+performOperationSync:667, ExecutionEntity (org.activiti.engine.impl.persistence.entity)
+performOperation:660, ExecutionEntity (org.activiti.engine.impl.persistence.entity)
+execute:51, AbstractEventAtomicOperation (org.activiti.engine.impl.pvm.runtime) [1]
+performOperation:67, CommandContext (org.activiti.engine.impl.interceptor)
+performOperationSync:667, ExecutionEntity (org.activiti.engine.impl.persistence.entity)
+performOperation:660, ExecutionEntity (org.activiti.engine.impl.persistence.entity)                                     下一个步骤的开始，同步异步皆有可能，根据Activity是否是异步决定
+execute:49, AtomicOperationTransitionCreateScope (org.activiti.engine.impl.pvm.runtime)                                 AtomicOperationTransitionCreateScope 同步异步皆可
+performOperation:67, CommandContext (org.activiti.engine.impl.interceptor)                                              在ExecutionEntity.execute里面会判断 同步异步执行
+execute:34, AsyncContinuationJobHandler (org.activiti.engine.impl.jobexecutor)
+execute:85, JobEntity (org.activiti.engine.impl.persistence.entity)
+execute:34, MessageEntity (org.activiti.engine.impl.persistence.entity)
+execute:52, ExecuteAsyncJobCmd (org.activiti.engine.impl.cmd)
+execute:24, CommandInvoker (org.activiti.engine.impl.interceptor)
+execute:56, CommandContextInterceptor (org.activiti.engine.impl.interceptor)
+doInTransaction:47, SpringTransactionInterceptor$1 (org.activiti.spring)
+execute:133, TransactionTemplate (org.springframework.transaction.support)
+execute:45, SpringTransactionInterceptor (org.activiti.spring)
+execute:31, LogInterceptor (org.activiti.engine.impl.interceptor)
+execute:41, CommandExecutorImpl (org.activiti.engine.impl.cfg)
+execute:36, CommandExecutorImpl (org.activiti.engine.impl.cfg)
+executeJob:95, ExecuteAsyncRunnable (org.activiti.engine.impl.asyncexecutor)
+run:50, ExecuteAsyncRunnable (org.activiti.engine.impl.asyncexecutor)
+runWorker:1149, ThreadPoolExecutor (java.util.concurrent)
+run:624, ThreadPoolExecutor$Worker (java.util.concurrent)
+run:748, Thread (java.lang)
