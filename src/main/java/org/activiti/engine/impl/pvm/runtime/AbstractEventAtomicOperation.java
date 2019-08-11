@@ -29,17 +29,17 @@ public abstract class AbstractEventAtomicOperation implements AtomicOperation {
 
     public boolean isAsync(InterpretableExecution execution) {
         return false;
-    }
+    }   // 默认所有继承的类都是同步的
 
     public void execute(InterpretableExecution execution) {
         ScopeImpl scope = getScope(execution);
-        List<ExecutionListener> exectionListeners = scope.getExecutionListeners(getEventName());
+        List<ExecutionListener> executionListeners = scope.getExecutionListeners(getEventName());    //　获取所有的监听
         int executionListenerIndex = execution.getExecutionListenerIndex();
 
-        if (exectionListeners.size() > executionListenerIndex) {
+        if (executionListeners.size() > executionListenerIndex) {
             execution.setEventName(getEventName());
             execution.setEventSource(scope);
-            ExecutionListener listener = exectionListeners.get(executionListenerIndex);
+            ExecutionListener listener = executionListeners.get(executionListenerIndex);
             try {
                 listener.notify(execution);
             } catch (RuntimeException e) {
@@ -55,7 +55,7 @@ public abstract class AbstractEventAtomicOperation implements AtomicOperation {
             execution.setEventName(null);
             execution.setEventSource(null);
 
-            eventNotificationsCompleted(execution);
+            eventNotificationsCompleted(execution);         // 通知结束，调用了自己定义给子类实现的接口
         }
     }
 

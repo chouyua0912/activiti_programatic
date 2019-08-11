@@ -102,9 +102,9 @@ public class ExecutionEntity extends VariableScopeImpl implements ActivityExecut
     protected ExecutionEntity parent;
 
     /**
-     * nested executions representing scopes or concurrent paths
+     * nested executions representing scopes or concurrent paths    保存所有自己的子流程
      */
-    protected List<ExecutionEntity> executions;
+    protected List<ExecutionEntity> executions;                     // 保存所有自己的子流程　execution
 
     /**
      * super execution, not-null if this execution is part of a subprocess
@@ -114,7 +114,7 @@ public class ExecutionEntity extends VariableScopeImpl implements ActivityExecut
     /**
      * reference to a subprocessinstance, not-null if currently subprocess is started from this execution
      */
-    protected ExecutionEntity subProcessInstance;
+    protected ExecutionEntity subProcessInstance;                   // 子流程　ProcessInstance
 
     protected StartingExecution startingExecution;
 
@@ -712,7 +712,7 @@ public class ExecutionEntity extends VariableScopeImpl implements ActivityExecut
 
     @SuppressWarnings({"unchecked", "rawtypes"})
     protected void ensureExecutionsInitialized() {
-        if (executions == null) {
+        if (executions == null) {                   // 所有的子流程
             this.executions = (List) Context
                     .getCommandContext()
                     .getExecutionEntityManager()
@@ -1053,14 +1053,14 @@ public class ExecutionEntity extends VariableScopeImpl implements ActivityExecut
         List<InterpretableExecution> executions = new ArrayList<InterpretableExecution>(getExecutions());
         for (InterpretableExecution childExecution : executions) {
             if (childExecution.getSubProcessInstance() != null) {
-                childExecution.getSubProcessInstance().deleteCascade(reason);
+                childExecution.getSubProcessInstance().deleteCascade(reason);   // 删掉子流程
             }
-            historyManager.recordActivityEnd((ExecutionEntity) childExecution);
+            historyManager.recordActivityEnd((ExecutionEntity) childExecution); // 记录历史
             childExecution.deleteCascade(reason);
         }
 
         if (activityId != null) {
-            historyManager.recordActivityEnd(this);
+            historyManager.recordActivityEnd(this);         // 记录自己结束，然后再删除所有的任务和job
         }
 
         removeTasks(reason);
@@ -1084,13 +1084,13 @@ public class ExecutionEntity extends VariableScopeImpl implements ActivityExecut
         }
     }
 
-    private void removeJobs() {
+    private void removeJobs() {                 // 删除所有Ｊｏｂ
         for (Job job : getJobs()) {
             ((JobEntity) job).delete();
         }
     }
 
-    private void removeTasks(String reason) {
+    private void removeTasks(String reason) {       // 私有方法，删除所有ｔａｓｋ
         if (reason == null) {
             reason = TaskEntity.DELETE_REASON_DELETED;
         }

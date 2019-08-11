@@ -26,13 +26,13 @@ public class AtomicOperationTransitionCreateScope implements AtomicOperation {
 
     public boolean isAsync(InterpretableExecution execution) {
         ActivityImpl activity = (ActivityImpl) execution.getActivity();     // execution在JobEntity.execute时候查找绑定的
-        return activity.isAsync();
+        return activity.isAsync();              // 根据设置的是不是异步的返回
     }
 
     public void execute(InterpretableExecution execution) {     // ExecutionEntity = InterpretableExecution
         InterpretableExecution propagatingExecution = null;     // execution在JobEntity.execute时候查找绑定的
-        ActivityImpl activity = (ActivityImpl) execution.getActivity();
-        if (activity.isScope()) {
+        ActivityImpl activity = (ActivityImpl) execution.getActivity();     // 获取当前任务Activity
+        if (activity.isScope()) {                               // 是否需要创建子流程，不需要的话在５０行直接执行了。
             propagatingExecution = (InterpretableExecution) execution.createExecution();
             propagatingExecution.setActivity(activity);
             propagatingExecution.setTransition(execution.getTransition());
@@ -46,6 +46,6 @@ public class AtomicOperationTransitionCreateScope implements AtomicOperation {
             propagatingExecution = execution;
         }
 
-        propagatingExecution.performOperation(AtomicOperation.TRANSITION_NOTIFY_LISTENER_START);
+        propagatingExecution.performOperation(AtomicOperation.TRANSITION_NOTIFY_LISTENER_START);    //不是Scope的话则直接执行
     }
 }
